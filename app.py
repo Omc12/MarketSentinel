@@ -324,8 +324,8 @@ def main():
             return
         
         # Validate ticker format (basic check)
-        if not ticker.isalpha() or len(ticker) > 5:
-            st.error("Please enter a valid ticker symbol (1-5 letters).")
+        if not ticker.isalpha() or len(ticker) > 15:
+            st.error("Please enter a valid ticker symbol (1-15 letters).")
             return
         
         # Run pipeline
