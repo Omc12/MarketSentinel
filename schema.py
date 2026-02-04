@@ -1,5 +1,5 @@
 """
-Output schema definitions for Stock News RAG Signals.
+Output schema definitions for MarketSentinel.
 """
 
 from dataclasses import dataclass, field

@@ -1,4 +1,4 @@
-# Stock News RAG Signals
+# 
 
 A Retrieval-Augmented Generation (RAG) system that converts recent stock news into structured, grounded JSON signals for downstream ML consumption.
 

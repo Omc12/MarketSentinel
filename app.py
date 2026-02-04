@@ -1,5 +1,5 @@
 """
-Stock News RAG Signals - Streamlit Application
+MarketSentinel - Streamlit Application
 
 A product-style RAG system that converts stock news into structured,
 grounded JSON signals for ML consumption.
@@ -18,7 +18,7 @@ from schema import StockSignal
 
 # Page configuration
 st.set_page_config(
-    page_title="Stock News RAG Signals",
+    page_title="MarketSentinel",
     page_icon="📈",
     layout="wide"
 )
@@ -257,7 +257,7 @@ def main():
     """Main Streamlit application."""
     
     # Header
-    st.markdown('<p class="main-header">📈 Stock News RAG Signals</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-header">📈 MarketSentinel</p>', unsafe_allow_html=True)
     st.markdown(
         '<p class="sub-header">Convert recent stock news into structured, grounded signals for ML consumption</p>',
         unsafe_allow_html=True
