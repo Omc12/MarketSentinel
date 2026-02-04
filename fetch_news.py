@@ -1,3 +1,6 @@
+class NewsAPIError(Exception):
+    """Custom exception for news API errors."""
+    pass
 """
 Fetch stock news from Alpha Vantage News & Sentiment API.
 """
