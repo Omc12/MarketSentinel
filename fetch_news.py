@@ -40,6 +40,42 @@ class NewsArticle:
             "sentiment_label": self.sentiment_label
         }
 
+# Indian stock ticker to company name mapping for better news search
+INDIAN_STOCK_MAPPING = {
+    "RELIANCE": "Reliance Industries",
+    "TCS": "Tata Consultancy Services",
+    "HDFCBANK": "HDFC Bank",
+    "INFY": "Infosys",
+    "HINDUNILVR": "Hindustan Unilever",
+    "ICICIBANK": "ICICI Bank",
+    "SBIN": "State Bank of India",
+    "BHARTIARTL": "Bharti Airtel",
+    "ITC": "ITC Limited",
+    "KOTAKBANK": "Kotak Mahindra Bank",
+    "LT": "Larsen & Toubro",
+    "AXISBANK": "Axis Bank",
+    "TATAMOTORS": "Tata Motors",
+    "TATASTEEL": "Tata Steel",
+    "WIPRO": "Wipro",
+    "MARUTI": "Maruti Suzuki",
+    "SUNPHARMA": "Sun Pharmaceutical",
+    "ADANIGREEN": "Adani Green Energy",
+    "ADANIPORTS": "Adani Ports",
+    "ONGC": "Oil and Natural Gas Corporation",
+    "NTPC": "NTPC Limited",
+    "POWERGRID": "Power Grid Corporation",
+    "ULTRACEMCO": "UltraTech Cement",
+    "TECHM": "Tech Mahindra",
+    "BAJFINANCE": "Bajaj Finance",
+    "TITAN": "Titan Company",
+    "NESTLEIND": "Nestle India",
+    "ASIANPAINT": "Asian Paints",
+    "DIVISLAB": "Divi's Laboratories",
+    "HEROMOTOCO": "Hero MotoCorp",
+    "TATSILV": "Tata Elxsi"
+}
+
+
 def fetch_stock_news(
     ticker: str,
     days: int = 14,
@@ -61,17 +97,18 @@ def fetch_stock_news(
     if not api_key:
         raise NewsAPIError("Newsdata.io API key not configured. Please set NEWSDATA_API_KEY in .env file.")
 
-    query = ticker
+    # Map Indian ticker to company name for better search results
+    ticker_upper = ticker.upper()
+    query = INDIAN_STOCK_MAPPING.get(ticker_upper, ticker)
+    
     base_url = "https://newsdata.io/api/1/news"
     # Free tier only supports basic parameters (q, language, apikey)
-    # Date filtering, country, and category are not supported in free tier
     params = {
         "apikey": api_key,
         "q": query,
         "language": "en"
     }
     articles = []
-    fetched = 0
     
     try:
         response = requests.get(base_url, params=params, timeout=30)
@@ -97,7 +134,7 @@ def fetch_stock_news(
         )
         if article.title and article.summary:
             articles.append(article)
-            if fetched >= limit:
+            if len(articles) >= limit:
                 break
     
     return articles
