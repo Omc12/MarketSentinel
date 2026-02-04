@@ -1,13 +1,24 @@
-# 
+## Environment Variables
 
-A Retrieval-Augmented Generation (RAG) system that converts recent stock news into structured, grounded JSON signals for downstream ML consumption.
+Create a `.env` file in the project root with the following:
 
-## Features
+```
+NEWSDATA_API_KEY=your_newsdata_api_key_here
+```
 
-- **Hybrid Retrieval**: Combines semantic search (sentence embeddings) with keyword search (BM25)
-- **MMR Re-ranking**: Reduces redundancy in retrieved documents using Maximal Marginal Relevance
-- **Grounded Generation**: Uses Gemini with strict prompting to ensure factual, evidence-based outputs
-- **Structured Output**: Returns ML-friendly JSON signals with sentiment, drivers, risks, and evidence
+You can get a free API key from https://newsdata.io/
+
+## Requirements
+
+```
+streamlit>=1.28.0
+google-generativeai>=0.8.0
+sentence-transformers>=2.2.0
+rank-bm25>=0.2.2
+numpy>=1.24.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+```
 
 ## Output Schema
 

@@ -14,98 +14,83 @@ load_dotenv()
 
 @dataclass
 class NewsArticle:
-    """Represents a single news article."""
-    title: str
-    summary: str
-    source: str
-    url: str
-    published_at: str
-    sentiment_score: Optional[float] = None
-    sentiment_label: Optional[str] = None
+
     
-    @property
-    def full_text(self) -> str:
-        """Combine title and summary for embedding/retrieval."""
-        return f"{self.title}\n\n{self.summary}"
-    
-    def to_dict(self) -> dict:
-        return {
-            "title": self.title,
-            "summary": self.summary,
-            "source": self.source,
-            "url": self.url,
-            "published_at": self.published_at,
-            "sentiment_score": self.sentiment_score,
-            "sentiment_label": self.sentiment_label
+        ticker: str,
+        days: int = 14,
+        limit: int = 50
+    ) -> List[NewsArticle]:
+        """
+        Fetch recent news for a stock ticker using Newsdata.io API.
+        Supports both US and Indian stocks (by company name or ticker).
+        Args:
+            ticker: Stock ticker symbol or company name (e.g., 'AAPL', 'RELIANCE')
+            days: Number of days to look back (default 14)
+            limit: Maximum number of articles to return
+        Returns:
+            List of NewsArticle objects
+        Raises:
+            NewsAPIError: If API call fails or returns an error
+        """
+        api_key = os.getenv("NEWSDATA_API_KEY")
+        if not api_key:
+            raise NewsAPIError("Newsdata.io API key not configured. Please set NEWSDATA_API_KEY in .env file.")
+
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        # Newsdata.io expects YYYY-MM-DD format
+        from_date = start_date.strftime("%Y-%m-%d")
+        to_date = end_date.strftime("%Y-%m-%d")
+
+        # Use ticker or company name as query
+        query = ticker
+
+        base_url = "https://newsdata.io/api/1/news"
+        params = {
+            "apikey": api_key,
+            "q": query,
+            "language": "en",
+            "from_date": from_date,
+            "to_date": to_date,
+            "page": 0,
+            "country": "us,in",
+            "category": "business"
         }
 
+        articles = []
+        fetched = 0
+        page = 0
+        while fetched < limit:
+            params["page"] = page
+            try:
+                response = requests.get(base_url, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+            except requests.RequestException as e:
+                raise NewsAPIError(f"Failed to fetch news: {str(e)}")
 
-class NewsAPIError(Exception):
-    """Custom exception for news API errors."""
-    pass
+            if data.get("status") != "success":
+                raise NewsAPIError(f"API Error: {data.get('message', 'Unknown error')}")
 
+            news_list = data.get("results", [])
+            if not news_list:
+                break
 
-def fetch_stock_news(
-    ticker: str,
-    days: int = 14,
-    limit: int = 50
-) -> List[NewsArticle]:
-    """
-    Fetch recent news for a stock ticker from Alpha Vantage.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., 'AAPL', 'TSLA')
-        days: Number of days to look back (7-14 recommended)
-        limit: Maximum number of articles to return
-        
-    Returns:
-        List of NewsArticle objects
-        
-    Raises:
-        NewsAPIError: If API call fails or returns an error
-    """
-    api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
-    if not api_key or api_key == "your_alpha_vantage_api_key_here":
-        raise NewsAPIError("Alpha Vantage API key not configured. Please set ALPHA_VANTAGE_API_KEY in .env file.")
-    
-    # Calculate time range
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
-    
-    # Format dates for API (YYYYMMDDTHHMM format)
-    time_from = start_date.strftime("%Y%m%dT0000")
-    time_to = end_date.strftime("%Y%m%dT2359")
-    
-    # Build API URL
-    base_url = "https://www.alphavantage.co/query"
-    params = {
-        "function": "NEWS_SENTIMENT",
-        "tickers": ticker.upper(),
-        "time_from": time_from,
-        "time_to": time_to,
-        "limit": limit,
-        "apikey": api_key
-    }
-    
-    try:
-        response = requests.get(base_url, params=params, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as e:
-        raise NewsAPIError(f"Failed to fetch news: {str(e)}")
-    
-    # Check for API errors
-    if "Error Message" in data:
-        raise NewsAPIError(f"API Error: {data['Error Message']}")
-    
-    if "Information" in data:
-        # Rate limit or other info message
-        raise NewsAPIError(f"API Info: {data['Information']}")
-    
-    if "Note" in data:
-        # API call frequency message
-        raise NewsAPIError(f"API Rate Limit: {data['Note']}")
-    
+            for item in news_list:
+                article = NewsArticle(
+                    title=item.get("title", ""),
+                    summary=item.get("description", ""),
+                    source=item.get("source_id", "Unknown"),
+                    url=item.get("link", ""),
+                    published_at=item.get("pubDate", "")
+                )
+                if article.title and article.summary:
+                    articles.append(article)
+                    fetched += 1
+                    if fetched >= limit:
+                        break
+            page += 1
+        return articles
     # Parse articles
     articles = []
     feed = data.get("feed", [])
