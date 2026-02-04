@@ -61,83 +61,44 @@ def fetch_stock_news(
     if not api_key:
         raise NewsAPIError("Newsdata.io API key not configured. Please set NEWSDATA_API_KEY in .env file.")
 
-    end_date = datetime.utcnow()
-    start_date = end_date - timedelta(days=days)
-    from_date = start_date.strftime("%Y-%m-%d")
-    to_date = end_date.strftime("%Y-%m-%d")
     query = ticker
     base_url = "https://newsdata.io/api/1/news"
+    # Free tier only supports basic parameters (q, language, apikey)
+    # Date filtering, country, and category are not supported in free tier
     params = {
         "apikey": api_key,
         "q": query,
-        "language": "en",
-        "from_date": from_date,
-        "to_date": to_date,
-        "page": 0,
-        "country": "us,in",
-        "category": "business"
+        "language": "en"
     }
     articles = []
     fetched = 0
-    page = 0
-    while fetched < limit:
-        params["page"] = page
-        try:
-            response = requests.get(base_url, params=params, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-        except requests.RequestException as e:
-            raise NewsAPIError(f"Failed to fetch news: {str(e)}")
-        if data.get("status") != "success":
-            raise NewsAPIError(f"API Error: {data.get('message', 'Unknown error')}")
-        news_list = data.get("results", [])
-        if not news_list:
-            break
-        for item in news_list:
-            article = NewsArticle(
-                title=item.get("title", ""),
-                summary=item.get("description", ""),
-                source=item.get("source_id", "Unknown"),
-                url=item.get("link", ""),
-                published_at=item.get("pubDate", "")
-            )
-            if article.title and article.summary:
-                articles.append(article)
-                fetched += 1
-                if fetched >= limit:
-                    break
-        page += 1
-    return articles
-    # Parse articles
-    articles = []
-    feed = data.get("feed", [])
     
-    if not feed:
+    try:
+        response = requests.get(base_url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException as e:
+        raise NewsAPIError(f"Failed to fetch news: {str(e)}")
+    
+    if data.get("status") != "success":
+        raise NewsAPIError(f"API Error: {data.get('message', 'Unknown error')}")
+    
+    news_list = data.get("results", [])
+    if not news_list:
         return articles
     
-    for item in feed:
-        # Extract ticker-specific sentiment if available
-        ticker_sentiment = None
-        ticker_upper = ticker.upper()
-        
-        for ts in item.get("ticker_sentiment", []):
-            if ts.get("ticker") == ticker_upper:
-                ticker_sentiment = ts
-                break
-        
+    for item in news_list:
         article = NewsArticle(
             title=item.get("title", ""),
-            summary=item.get("summary", ""),
-            source=item.get("source", "Unknown"),
-            url=item.get("url", ""),
-            published_at=item.get("time_published", ""),
-            sentiment_score=float(ticker_sentiment.get("ticker_sentiment_score", 0)) if ticker_sentiment else None,
-            sentiment_label=ticker_sentiment.get("ticker_sentiment_label") if ticker_sentiment else None
+            summary=item.get("description", ""),
+            source=item.get("source_id", "Unknown"),
+            url=item.get("link", ""),
+            published_at=item.get("pubDate", "")
         )
-        
-        # Only include articles with meaningful content
         if article.title and article.summary:
             articles.append(article)
+            if fetched >= limit:
+                break
     
     return articles
 
